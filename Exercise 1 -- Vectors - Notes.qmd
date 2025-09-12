@@ -1,0 +1,237 @@
+---
+title: "Assignment B"
+format: 
+   html:
+     embed-resources: true
+editor: visual
+---
+
+## Exercises 1. Vectors
+
+1.  Create the vectors:
+
+    (a) $(1, 2, 3, \dots, 19, 20)$
+
+    (b) $(20, 19, \dots, 2, 1)$
+
+    (c) $(1, 2, 3, \dots, 19, 20, 19, 18, \dots, 2, 1)$
+
+    (d) $(4, 6, 3)$ and assign it to the name **tmp**. <br> For parts (e), (f) and (g) look at the help for the function rep.
+
+    (e) $(4, 6, 3, 4, 6, 3, \dots, 4, 6, 3)$ where there are 10 occurrences of 4.
+
+    (f) $(4, 6, 3, 4, 6, 3, \dots, 4, 6, 3, 4)$ <br>where there are 11 occurrences of 4, 10 occurrences of 6 and 10 occurrences of 3.
+
+    (g) $(4, 4, \dots, 4, 6, 6, \dots, 6, 3, 3, \dots,3)$ <br> where there are 10 occurrences of 4, 20 occurrences of 6 and 30 occurrences of 3.
+
+```{r}
+#|
+```
+
+```{r}
+#| label: 1(a-g)
+#| echo: true
+
+#a
+p_1a <- 1:20
+p_1a
+#b
+p_1b <- 20:1
+p_1b
+#c
+p_1c <- c(1:20,19:1)
+p_1b
+
+#d & e
+#############################
+# from chatgpt
+# answer 1
+tmp <- c(4, 6, 3)
+v <- rep(tmp, length.out = 10 * length(tmp))  # Repeat enough times
+## checkit
+v
+length(which(v==4))
+
+## chatGPT answer 2
+v <- v[1:(which(cumsum(v == 4) == 10)[1] * length(tmp)/sum(tmp == 4))]  
+
+# Trim to exactly 10 occurrences of 4
+## Check it
+v
+length(which(v==4))
+##############################
+## my answer
+
+p_1e <- rep(tmp,10)
+p_1e
+length(which(p_1e==4))
+
+############################
+
+#f
+
+p_1f <- rep(tmp, l=31)
+p_1f
+length(which(p_1f==4))
+length(which(p_1f==6))
+length(which(p_1f==3))
+
+#g
+p_1g <- rep(tmp, times=c(10,20,30))
+p_1g
+length(which(p_1g==4))
+length(which(p_1g==6))
+length(which(p_1g==3))
+
+
+
+```
+
+2.  Create a vector of the values of $e^x cos(x)$ at $x = 3, 3.1, 3.2, \dots, 6.$
+
+```{r}
+#| label: prob 2
+library(base)
+library(graphics)
+
+tmp <- seq(3, 6, by=0.1)
+p_2 <- exp(tmp)*cos(tmp)
+
+plot(tmp,exp(tmp), type = "l", main = "exp(tmp)")
+plot(tmp,cos(tmp), type = "l")
+plot(tmp,p_2,type = "l")
+
+
+```
+
+3.  Create the following vectors:
+
+    (a) $(0.1^30.2^1, 0.1^6 0.2^4, \dots, 0.1^{36}0.2^{34})$
+
+    (b) $(2, \frac{2^2}{2}, \frac{2^3}{3}, \dots, \frac{2^{25}}{25})$
+
+```{r}
+#| label: Prob 3a
+#| 
+
+options(scipen = 0)
+
+p_3a <- (0.1^seq(3,36,by=3))*(0.2^seq(1,34,by=3))
+p_3a
+
+a <- (0.1^seq(3,36,by=3))
+a
+b <- (0.2^seq(1,34,by=3))
+b
+
+a*b == p_3a
+
+```
+
+4.  Calculate the following:
+
+    (a) $\displaystyle \sum _{i=10}^{100} (i^3 + 4i^2)$
+
+    (b) $\displaystyle \sum_{i=1}^{25} \left ( \frac{2^i}{i} + \frac{3^i}{i^2} \right )$
+
+<p style="page-break-before:always">
+
+</p>
+
+```{r}
+#| label: Prob 4a
+
+tmp <- 10:100
+tmp^3 + 4*tmp^2
+plot(tmp, tmp^3 + 4*tmp^2, pch=20 ,main = "prob 4a")
+sum(tmp^3+4*tmp^2)
+
+```
+
+5.  Use the function paste to create the following character vectors of length 30:
+
+    (a) ("label 1", "label 2", ... , "label 30")<br> Note that there is a single space between **label** and the number following.
+
+    (b) ("fn1", "fn2", ... , "fn30"). <br> In this case, there is no space between **fn** and the number following.
+
+6.  Execute the following lines which create two vectors of random integers which are chosen with replacement from the integers $0, 1, \dots , 999$. Both vectors have length 250.
+
+::: {style="margin-left:2.5cm"}
+set.seed(50)
+
+xVec \<- sample(0:999, 250, replace=T)\
+yVec \<- sample(0:999, 250, replace=T)
+
+Suppose x = (x_1, x_2, \dots, x_n) denotes the vector xVec and\
+y = (y_1, y_2, \dots, y_n) denotes the vector yVec.
+:::
+
+::: {style="margin-left:1.5cm"}
+(a) Create the vector $(y_2 - x_1, \dots,  y_n - x_{n−1})$.
+
+(b) Create the vector $(\frac{sin(y_1)}{cos(x_2)}, \frac{sin(y_2)}{cos(x_3)}, \dots, \frac{sin(y_{n−1})}{cos(x_n)})$
+
+(c) Create the vector $(x_1 + 2x_2 - x_3, x_2 + 2x_3 - x_4, \dots, x_{n−2} + 2x_{n−1} - x_n)$
+
+(d) Calculate $\displaystyle \sum_{i=1}^{n-1} \frac{e^{-x_{i+1}}}{x_i + 10}$
+:::
+
+```{r}
+#| label: prob 6
+
+## setup
+
+xVec <- sample(0:999, 250, replace=T)
+yVec <- sample(0:999, 250, replace=T)
+
+## for illustration
+
+xv1 <- xVec[1:25]
+yv1 <- yVec[1:25]
+
+###a
+yv1
+yv1[-1]
+
+```
+
+7.  This question uses the vectors xVec and yVec created in the previous question and the functions sort(), order(), mean(), sqrt(), sum(), and abs().
+
+    (a) Pick out the values in yVec which are \> 600.
+
+    (b) What are the index positions in yVec of the values which are \> 600?
+
+    (c) What are the values in xVec which correspond to the values in yVec which are \> 600?<br> (By correspond, we mean at the same index positions.)
+
+    (d) Create the vector $(|x_1 - \bar{x}|^{1/2}, \;\;|x_2 - \bar{x}|^{1/2},\;\; \dots\;,\;\; |x_n - \bar{x}|^{1/2} )$<br> where $\bar{x}$ denotes the mean of the vector $x = (x_1, x_2, \dots, x_n)$.
+
+    (e) How many values in yVec are within 200 of the maximum value of the terms in yVec?
+
+    (f) How many numbers in xVec are divisible by 2?<br> (Note that the modulo operator is denoted **%%**.)
+
+    (g) Sort the numbers in the vector xVec in the order of increasing values in yVec.
+
+    (h) Pick out the elements in yVec at index positions 1, 4, 7, 10, 13, ...
+
+8.  By using the function cumprod() or otherwise, calculate
+
+    ::: {style="margin-left: 2cm"}
+    $1 + \frac{2}{3} + \left (\frac{2}{3}\;\frac{4}{5} \right ) + \left (\frac{2}{3}\;\frac{4}{5}\;\frac{6}{7} \right ) + \dots +$ $\left (\frac{2}{3}\;\frac{4}{5}\;\dots \frac{38}{39} \right )$
+    :::
+
+```{r}
+#| prob_8
+
+1+sum(cumprod(seq(2,38,b=2)/seq(3,39,b=2)))
+
+seq(2,38,b=2)
+
+seq(3,39,b=2)
+
+seq(2,38,b=2)/seq(3,39,b=2)
+
+cumprod(seq(2,38,b=2)/seq(3,39,b=2))
+
+sum(cumprod(seq(2,38,b=2)/seq(3,39,b=2)))
+
+```
