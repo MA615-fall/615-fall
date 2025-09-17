@@ -108,6 +108,11 @@ h
 res<-1+sum(cumprod(seq(2,38,by=2)/seq(3,39,by=2)))
 res
 
+#Matrix
+#1
+#1.a
+
+
 
 
 

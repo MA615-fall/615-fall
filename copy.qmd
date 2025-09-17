@@ -1,4 +1,12 @@
 ---
+title: "copy"
+format: html
+editor: visual
+---
+
+## 
+
+---
 title: "assignment B"
 format: html
 editor: visual
@@ -195,10 +203,6 @@ num
 b<-which(apply(aMat,1,function(x) sum(x==7)==2))
 b
 #7.c
-<<<<<<< HEAD
-
-```
-=======
 ncols<- ncol(aMat)
 col_sum<- colSums(aMat)
 all_com<- expand.grid(i=1:ncols,j=1:ncols)
@@ -639,4 +643,3 @@ testFn2<- function(arr) {
   return(z)
 }
 ```
->>>>>>> 1a55803 (123)

@@ -1,0 +1,64 @@
+---
+title: "exercise 4"
+format: 
+   html:
+     embed-resources: true
+editor: visual
+---
+
+## Prob4-1
+
+```{r}
+#| label: p4-1a
+
+set.seed(50)
+x <- as.integer(runif(5, 1, 5))
+y <- as.integer(runif(6, 2, 4))
+
+z <- outer(y, x, "<")
+colSums(z)
+
+
+f_1a <- function(x, y){
+  z = colSums(outer(y,x,"<"))
+  return(z)
+}
+
+f_1a(x,y)
+
+```
+
+```{r}
+#| label: p4_1bc
+
+rowSums(sapply(y, FUN=function(y){y < x}))
+
+f_1b <- function(x,y){
+  rowSums(sapply(y, FUN=function(y){y < x}))
+}
+
+f_1b(x,y)
+
+
+f_1c <- function(x,y){
+
+  rowSums(vapply(y, FUN=function(y){y<x}, 
+       FUN.VALUE = (along=x)))
+}
+
+f_1c(x,y)
+
+```
+
+```{r}
+#| label: p4-e
+
+set.seed(53)
+x1 <- rnorm(10010)
+y1 <- rnorm(10020)
+
+system.time(f_1a(x1,y1))
+system.time(f_1b(x1,y1))
+system.time(f_1c(x1,y1))
+
+```

@@ -20,6 +20,7 @@ You can add options to executable code like this
 
 ```{r}
 #| echo: false
+1+1
 ```
 
 ```{r}
@@ -64,5 +65,31 @@ tmp^3+4*tmp^2
 The `echo: false` option disables the printing of code (only output is displayed).
 
 ```{r}
-#|
+temFn <-function(a) {
+  n=length(a)
+  mva = (a[-c(n-1,n)]+a[-c(1,n)]+a[-c(1,2)])/3
+  return mva
+}
+temFn <-function(mat){
+  if(!is.matrix(mat)) stop("it is not a matrix")
+  mat<-mat[mat%%2 == 1]*2
+  return(mat)
+}
+A<- matrix(c(1,1,3,5,2,6,-2,-1,-3),3,3,byrow=TRUE)
+# A%%2 == 0
+# A[A%%2 == 1]
+# re<-A[A%%2 == 1]*2
+temFn(A)
+
+testloop<- function(n){
+  if(n<4)stop("n must be an integer >3")
+  browser()
+  x =rep(NA, n-1)
+  x[1] = 1
+  x[2] = 2
+  
+  for (j in 3:(n-1)) {x[j]= x[j-1]+2/x[j-1]}
+  return(x)
+  }
+testloop(5)
 ```
