@@ -19,13 +19,29 @@ Fit a regression line to these data and display the output.
 ```{r}
 set.seed(123456)
 n<- 100
-e<- runif()
+x<- runif(n,0,50)
+e<- rnorm(n,0,3)
+a<- 5; b<-7
+y<- a+b*x +e
+data<- data.frame(x=x,y=y)
+model<- lm(y~x,data=data)
+summary(model)
+
 ```
 
 ### 7.2b 
 Graph a scatterplot of the data and the regression line. 
 
 ```{r}
+set.seed(123456)
+n<- 100
+x<- runif(n,0,50)
+e<- rnorm(n,0,3)
+a<- 5; b<-7
+y<- a+b*x +e
+data<- data.frame(x=x,y=y)
+ggplot(data, aes(x=x,y=y))+
+  geom_point()
 ```
 
 ### 7.2c 
