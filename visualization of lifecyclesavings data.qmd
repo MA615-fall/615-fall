@@ -1,0 +1,28 @@
+---
+title: "Visualization of LifeCycleSavings Data"
+format: pdf
+---
+
+## Introduction
+
+The `LifeCycleSavings` dataset in R contains economic data for 50 countries from 1960–1970.\
+It records personal savings rates and explanatory factors like population structure and income.\
+Visualizing this dataset helps us understand how demographic and economic conditions influence savings behavior.
+
+## Visualization
+
+```{r}
+
+df<- data("LifeCycleSavings")
+head(LifeCycleSavings)
+
+ggplot(data=df, aes(x = dpi, y = sr)) +
+  geom_point(color = "steelblue", size = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "darkred") +
+  labs(
+    title = "Savings Rate vs. Per-Capita Disposable Income",
+    x = "Per-Capita Disposable Income (dpi)",
+    y = "Personal Savings Rate (sr)"
+  ) +
+  theme_minimal(base_size = 14)
+```
