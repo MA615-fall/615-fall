@@ -13,10 +13,10 @@ Visualizing this dataset helps us understand how demographic and economic condit
 
 ```{r}
 
-df<- data("LifeCycleSavings")
+data("LifeCycleSavings")
 head(LifeCycleSavings)
-library(ggridges)
-ggplot(data=df, aes(x = dpi, y = sr)) +
+library(ggplot2)
+ggplot(LifeCycleSavings, aes(x = dpi, y = sr)) +
   geom_point(color = "steelblue", size = 2) +
   geom_smooth(method = "lm", se = FALSE, color = "darkred") +
   labs(
