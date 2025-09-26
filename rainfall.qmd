@@ -1,0 +1,40 @@
+---
+title: "rainfall"
+format: html
+editor: visual
+---
+
+## 
+
+```{r}
+df<-read.csv('/Users/chenfeng/Downloads/rain_dance_vs_cloud_seeding.csv')
+hist(df$rain_inches)
+df <- df[-16,]
+mod1<- lm(rain_inches ~ cloud_seeding+rain_dance ,data=df)
+mod2<- lm(rain_inches ~ rain_dance+cloud_seeding+rain_dance*cloud_seeding, data=df )
+mod3<- lm(rain_inches ~ cloud_seeding * rain_dance, data=df)
+
+summary(mod1)
+sss
+
+plot(mod1)
+summary(mod2)
+plot(mod2)
+summary(mod3)
+plot(mod3)
+```
+
+\
+
+```{r}
+df<-read.csv('/Users/chenfeng/Downloads/rain_dance_vs_cloud_seeding.csv')
+mod=lm(rain_inches~ cloud_seeding+rain_dance+cloud_seeding:rain_dance,data=df)
+summary(mod)
+plot(mod)
+max_rain<- max(df[-16,]$rain_inches)
+max_rain
+df[16,2]= max_rain
+summary(mod)
+df[16,2] =0
+summary(mod)
+```
