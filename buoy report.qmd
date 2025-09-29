@@ -1,0 +1,167 @@
+---
+title: "Monthly Average Air Temperature vs Water Temperature (1984–2024)"
+author: "ZHIXUAN GUAN"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: source
+---
+
+research topic：how do the monthly averages of air temperature (ATMP) and water temperature (WTMP) compare (1984–2024), and what does their differencereveal about seasonal ocean–atmosphere coupling?
+
+```{r}
+library(data.table) 
+library(dplyr)        
+library(lubridate)   
+library(ggplot2)      
+library(tibble)       
+file_root <- "https://www.ndbc.noaa.gov/view_text_file.php?filename=44013h"
+tail <- ".txt.gz&dir=data/historical/stdmet/"
+
+load_buoy_data <- function(year) {
+  path<- paste0(file_root, year, tail)
+
+  header<- scan(path, what = 'character', nlines = 1)
+  num_columns<- length(header)  
+
+  if (num_columns == 16) {
+    buoy<- read.table(path, fill = TRUE, header = TRUE, sep = "")
+    buoy<- add_column(buoy, mm = NA, .after = "hh")
+    buoy<- add_column(buoy, TIDE = NA, .after = "VIS")
+
+  } else if (num_columns == 17) {
+    buoy<- read.table(path, fill = TRUE, header = TRUE, sep = "")
+    buoy<- add_column(buoy, TIDE = NA, .after = "VIS")
+
+  } else {
+    buoy<- fread(path, header = FALSE, skip = 1, fill = TRUE)
+    setnames(buoy, header)
+  }
+
+  return(buoy)
+}
+years <- 1984:2024
+all_data <- lapply(years, load_buoy_data)
+combined_data <- rbindlist(all_data, fill = TRUE)
+nrow(combined_data)
+
+needed_cols <- c("YY", "#YY", "YYYY", "MM", "DD", "hh", "mm","BAR", "PRES", "WD", "WDIR","TIDE", "TIDE.1")
+
+for (cn in needed_cols) {
+  if (!cn %in% names(combined_data)) {
+    if (cn %in% c("MM","DD","hh","mm"))      combined_data[[cn]] <- NA_integer_
+    else if (cn %in% c("BAR","PRES","WD"))   combined_data[[cn]] <- NA_real_
+    else if (cn %in% c("WDIR"))              combined_data[[cn]] <- NA_real_
+    else if (cn %in% c("TIDE","TIDE.1"))     combined_data[[cn]] <- NA_real_
+    else if (cn %in% c("YY","#YY","YYYY"))   combined_data[[cn]] <- NA_character_
+    else combined_data[[cn]] <- NA
+  }
+}
+
+combined_data<- combined_data %>%
+  mutate(
+     YY= as.character(YY),
+    `#YY`= as.character(`#YY`),
+    YYYY= as.character(YYYY)
+  )
+
+combined_data<- combined_data %>%
+  mutate(YYYY= coalesce(YYYY, `#YY`, YY))
+
+combined_data <- combined_data %>%
+  mutate(
+    BAR= coalesce(as.numeric(BAR), as.numeric(PRES)),  # BAR from BAR/PRES
+    WD= coalesce(as.numeric(WD),  as.numeric(WDIR))   # WD from WD/WDIR
+  )
+
+combined_data <- combined_data %>%
+  select(-TIDE, -TIDE.1, -mm, -WDIR, -PRES, -`#YY`, -YY)
+
+combined_data$datetime <- ymd_h(paste(combined_data$YYYY, combined_data$MM, combined_data$DD, combined_data$hh, sep = "-"))
+
+combined_data <- combined_data %>%
+  mutate(across(everything(), 
+                ~ na_if(as.numeric(as.character(.)), 99) %>%
+                na_if(999) %>%
+                na_if(9999)))
+
+if (!inherits(combined_data$datetime, "POSIXct")) {
+  combined_data$datetime <- ymd_h(paste(combined_data$YYYY, combined_data$MM, combined_data$DD, combined_data$hh, sep = "-"))
+}
+
+str(combined_data$datetime)
+
+monthly_temp_ts <- combined_data %>%
+  filter(!is.na(datetime)) %>%
+  mutate(month = floor_date(datetime, "month")) %>%
+  group_by(month) %>%
+  summarise(
+    n_obs          = dplyr::n(),
+    avg_air_temp   = mean(ATMP, na.rm = TRUE),
+    avg_water_temp = mean(WTMP, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  filter(n_obs >= 300) %>%
+  mutate(diff_temp = avg_air_temp - avg_water_temp) %>%
+  arrange(month)
+#| label: plot-monthly-ts
+#| fig-cap: "Monthly average air vs water temperature; dashed line is the air–water difference."
+#| fig-width: 8
+#| fig-height: 4
+ggplot(monthly_temp_ts, aes(x = month)) +
+  geom_line(aes(y = avg_air_temp,   color = "Air Temperature (ATMP)"), size = 1) +
+  geom_line(aes(y = avg_water_temp, color = "Water Temperature (WTMP)"), size = 1) +
+  geom_line(aes(y = diff_temp,      color = "Air − Water (Δ)"),
+            size = 1, linetype = "dashed") +
+  labs(
+    title = "Monthly Average Air vs Water Temperature (1984–2024)",
+    subtitle = "Months with fewer than 300 hourly records are removed",
+    x = "Month", y = "Temperature (°C)", color = "Legend"
+  ) +
+  theme_minimal(base_size = 12)
+#| label: monthly-climo
+monthly_temp_climo <- combined_data %>%
+  filter(!is.na(datetime)) %>%
+  mutate(moy = factor(month(datetime), levels = 1:12, labels = month.abb)) %>%
+  group_by(moy) %>%
+  summarise(
+    n_obs          = dplyr::n(),
+    avg_air_temp   = mean(ATMP, na.rm = TRUE),
+    avg_water_temp = mean(WTMP, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(diff_temp = avg_air_temp - avg_water_temp)
+
+monthly_temp_climo
+#| label: plot-monthly-climo
+#| fig-cap: "Climatological (month-of-year) air vs water temperature and their difference."
+#| fig-width: 8
+#| fig-height: 4
+ggplot(monthly_temp_climo, aes(x = moy, group = 1)) +
+  geom_line(aes(y = avg_air_temp,   color = "Air Temperature (ATMP)"), size = 1) +
+  geom_line(aes(y = avg_water_temp, color = "Water Temperature (WTMP)"), size = 1) +
+  geom_line(aes(y = diff_temp,      color = "Air − Water (Δ)"),
+            size = 1, linetype = "dashed") +
+  labs(
+    title = "Month-of-Year (1984–2024)",
+    subtitle = "All years combined; Δ = ATMP − WTMP",
+    x = "Month of Year", y = "Temperature (°C)", color = "Legend"
+  ) +
+  theme_minimal(base_size = 12)
+
+```
+
+The analysis shows a clear seasonal cycle in both air temperature (ATMP) and water temperature (WTMP) . Air temperature shows a much larger amplitude of variation, rising rapidly in late spring and declining sharply in autumn. While water temperature changes more gradually, with a smoother curve and a noticeable seasonal lag relative to the air.
+
+The air–water temperature difference (Δ = ATMP − WTMP) highlights the relationship that\
+- In winter months (Dec–Feb), Δ is strongly negative, meaning that the ocean is warmer than the air. This reflects the ocean’s ability to retain heat.\
+- In summer months (Jun–Aug), Δ is positive, with air being slightly warmer than water or we can say air is as the temperature as the water, indicating that the ocean lags behind in warming compared to the atmosphere.\
+- During spring and autumn, Δ crosses zero, illustrating transitional periods when the ocean and air are at similar temperatures.
+
+These findings demonstrate the ocean’s ability to maintain an stable temperature comparing to the rapid change in the air. The high heat capacity of seawater buffers rapid changes in air temperature, leading to seasonal lags between the atmosphere and the ocean. In winter, the ocean releases stored heat, keeping water temperatures higher than the air. In summer, the ocean warms more slowly, resulting in cooler water compared to the surrounding atmosphere.
