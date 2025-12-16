@@ -75,9 +75,11 @@ nice_label <- c(
 var_main <- "B25077_001"  # change if you want (e.g., "B19013_001")
 ```
 
-### 1) Household income
+###  Household income
 
-```{r income-trend-plot, fig-cap="Median household income in San Juan County (ACS 5-year)"}
+```{r}
+#| label: income-trend-plot
+#| fig-cap: "Median household income in San Juan County (ACS 5-year)"
 income_ts <- map_df(years, \(yr) {
   get_acs(
     geography = "county",
@@ -104,36 +106,8 @@ ggplot(income_ts, aes(x = year, y = estimate)) +
 
 This figure shows the trend in median household income in San Juan County based on ACS 5-year estimates. Median income increases steadily over the past decade, with more rapid growth after 2020. Because ACS estimates represent five-year averages, short-term fluctuations should be interpreted cautiously, but the overall upward trend suggests improving household income levels in the county.
 
-### 2) Median home value map
 
-```{r}
-county_ts <- map_df(years, \(yr) {
-  get_acs(
-    geography = "county",
-    variables = var_main,
-    state = county_state,
-    county = county_name,
-    survey = "acs5",
-    year = yr
-  ) %>%
-    mutate(year = yr)
-})
-
-ggplot(county_ts, aes(x = year, y = estimate)) +
-  geom_line() +
-  geom_point() +
-  labs(
-    title = paste("County trend:", nice_label[var_main]),
-    subtitle = "ACS 5-year estimates, San Juan County, WA",
-    x = NULL,
-    y = "Estimate"
-  ) +
-  theme_minimal(base_size = 13)
-```
-
-The choropleth map illustrates spatial variation in median home values across census tracts in San Juan County in 2023. Higher median home values are concentrated in certain tracts, reflecting differences in location, accessibility, and housing demand. Because census tracts in island counties are geographically large, the map highlights broad spatial patterns rather than fine-scale neighborhood differences.
-
-### 3) Trend of median home value
+###  Trend of median home value
 
 ```{r}
 homevalue_ts <- map_df(years, \(yr) {
@@ -161,7 +135,7 @@ ggplot(homevalue_ts, aes(x = year, y = estimate)) +
 
 This figure shows how the median home value in San Juan County changes over time. Home values are fairly stable in the mid-2010s, but they increase quickly after 2019. This sharp rise suggests growing housing demand and increasing affordability pressure in the county, especially given its limited land and island geography.
 
-### 4) Housing occupancy vs vacancy
+###  Housing occupancy vs vacancy
 
 ```{r}
 
@@ -208,7 +182,7 @@ ggplot(housing_long, aes(x = status, y = estimate)) +
 
 This bar chart compares the number of occupied and vacant housing units in San Juan County in 2023. A large portion of housing units are vacant. This is common in island and tourist areas, where many homes are used seasonally or as second homes. Therefore, a high vacancy rate does not mean that housing is easily available for year-round residents.
 
-### 5) Difference between two years
+###  Difference between two years
 
 ```{r}
 year_a <- 2013
@@ -249,7 +223,7 @@ ggplot(tract_diff) +
 
 This map shows how median home values changed across census tracts between 2013 and 2018. Positive values indicate tracts where home values increased, while negative values indicate little change or decreases. The map shows that changes are not uniform across the county, highlighting spatial differences in how housing markets evolved over time.
 
-### 6) Age distribution over gender
+###  Age distribution over gender
 
 ```{r}
 age_vars <- c(
