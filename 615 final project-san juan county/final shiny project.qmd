@@ -341,3 +341,4 @@ Error encountered during deployment: - Package `terra` failed to install because
 The Shiny app runs successfully in RStudio locally.
 
 Git link for the shiny app:
+https://github.com/MA615-fall/615-fall/tree/main/615%20final%20project-san%20juan%20county
