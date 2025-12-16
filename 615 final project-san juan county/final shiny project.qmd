@@ -1,0 +1,343 @@
+---
+title: "San Juan County, Washington: An Island Community Analysis"
+author: "Zhixuan Guan (U57788645)"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+  html:
+    toc: true
+    code-fold: true
+    theme: cosmo
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+# Final report
+
+## Introduction
+
+San Juan County, located in the northwest corner of Washington State, is a unique U.S. county composed entirely of islands, including San Juan Island, Orcas Island, Lopez Island, and Shaw Island, along with many smaller islands in the Salish Sea. Unlike most counties in the United States, San Juan County has no direct road connection to the mainland. Transportation of residents, goods, and visitors relies heavily on the Washington State Ferry system, making geography a central factor shaping demographic, economic, and housing patterns.
+
+The county is well known for its natural beauty and tourism economy. At the same time, it faces challenges common to island communities, including an aging population, high housing costs, seasonal population fluctuations, and constraints on infrastructure and labor supply.
+
+The purpose of this project is to display the island's population age distribution, house values, household income and so on to give readers a general idea of San Juan County in WA.
+
+## Data Sources
+
+This project relies primarily on publicly available data from the U.S. Census and related sources:
+
+-   **American Community Survey (ACS) 5-year estimates**\
+    Accessed using the `tidycensus` R package. ACS data provide demographic, economic, and housing characteristics at both the county and census tract levels.
+
+-   **Geographic boundary data**\
+    Census tract geometries were obtained directly through `tidycensus` and handled using the `sf` package.
+
+The ACS 5-year estimates are used throughout the analysis.
+
+### Loading packages
+
+```{r,warning=FALSE}
+library(tidycensus)
+library(tidyverse)
+library(sf)
+library(purrr)
+library(DT)
+library(leaflet)
+options(tigris_use_cache = TRUE)
+```
+
+```{r}
+#census_api_key("6ecbd3e7b10acec24e4553853443f06173ec24fc", install = TRUE)
+```
+
+## Exploratory Data Analysis
+
+```{r}
+county_state  <- "WA"
+county_name   <- "San Juan"
+year_min      <- 2013
+year_max      <- 2023
+years         <- year_min:year_max
+
+# Same variable labels as your Shiny app
+nice_label <- c(
+  "B25077_001" = "Median home value",
+  "B19013_001" = "Median household income",
+  "B01003_001" = "Total population",
+  "B25002_003" = "Vacant housing units",
+  "B25002_002" = "Occupied housing units"
+)
+
+# Choose which variable to feature in the report maps/plots
+var_main <- "B25077_001"  # change if you want (e.g., "B19013_001")
+```
+
+### 1) Household income
+
+```{r income-trend-plot, fig-cap="Median household income in San Juan County (ACS 5-year)"}
+income_ts <- map_df(years, \(yr) {
+  get_acs(
+    geography = "county",
+    variables = "B19013_001",  # Median household income
+    state = county_state,
+    county = county_name,
+    survey = "acs5",
+    year = yr
+  ) %>%
+    mutate(year = yr)
+})
+
+ggplot(income_ts, aes(x = year, y = estimate)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Median Household Income Over Time",
+    subtitle = "San Juan County, Washington (ACS 5-year estimates)",
+    x = NULL,
+    y = "Median household income (USD)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+This figure shows the trend in median household income in San Juan County based on ACS 5-year estimates. Median income increases steadily over the past decade, with more rapid growth after 2020. Because ACS estimates represent five-year averages, short-term fluctuations should be interpreted cautiously, but the overall upward trend suggests improving household income levels in the county.
+
+### 2) Median home value map
+
+```{r}
+county_ts <- map_df(years, \(yr) {
+  get_acs(
+    geography = "county",
+    variables = var_main,
+    state = county_state,
+    county = county_name,
+    survey = "acs5",
+    year = yr
+  ) %>%
+    mutate(year = yr)
+})
+
+ggplot(county_ts, aes(x = year, y = estimate)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = paste("County trend:", nice_label[var_main]),
+    subtitle = "ACS 5-year estimates, San Juan County, WA",
+    x = NULL,
+    y = "Estimate"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+The choropleth map illustrates spatial variation in median home values across census tracts in San Juan County in 2023. Higher median home values are concentrated in certain tracts, reflecting differences in location, accessibility, and housing demand. Because census tracts in island counties are geographically large, the map highlights broad spatial patterns rather than fine-scale neighborhood differences.
+
+### 3) Trend of median home value
+
+```{r}
+homevalue_ts <- map_df(years, \(yr) {
+  get_acs(
+    geography = "county",
+    variables = "B25077_001",   # Median home value
+    state = county_state,
+    county = county_name,
+    survey = "acs5",
+    year = yr
+  ) %>%
+    mutate(year = yr)
+})
+ggplot(homevalue_ts, aes(x = year, y = estimate)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Median Home Value Over Time",
+    subtitle = "San Juan County, Washington (ACS 5-year estimates)",
+    x = NULL,
+    y = "Median home value (USD)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+This figure shows how the median home value in San Juan County changes over time. Home values are fairly stable in the mid-2010s, but they increase quickly after 2019. This sharp rise suggests growing housing demand and increasing affordability pressure in the county, especially given its limited land and island geography.
+
+### 4) Housing occupancy vs vacancy
+
+```{r}
+
+
+housing_vars <- c(
+  total_units = "B25001_001",
+  occupied    = "B25002_002",
+  vacant      = "B25002_003",
+  seasonal_vacant = "B25004_006"   # seasonal/recreational/occasional use
+)
+
+housing_2023 <- get_acs(
+  geography = "county",
+  variables = housing_vars,
+  state = county_state,
+  county = county_name,
+  year = year_max
+)
+
+# Derived indicator: seasonal share of all housing units
+total_units <- housing_2023$estimate[housing_2023$variable == "total_units"]
+seasonal    <- housing_2023$estimate[housing_2023$variable == "seasonal_vacant"]
+
+seasonal_share <- ifelse(length(total_units)==0 || is.na(total_units) || total_units==0,
+                         NA_real_,
+                         100 * seasonal / total_units)
+
+round(seasonal_share, 1)
+housing_long <- housing_2023 %>%
+  filter(variable %in% c("occupied", "vacant")) %>%
+  mutate(status = recode(variable, occupied = "Occupied", vacant = "Vacant")) %>%
+  select(status, estimate)
+
+ggplot(housing_long, aes(x = status, y = estimate)) +
+  geom_col() +
+  labs(
+    title = "Housing Occupancy vs Vacancy",
+    subtitle = paste("ACS", year_max, "5-year estimates (county level)"),
+    x = NULL,
+    y = "Housing units (estimate)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+This bar chart compares the number of occupied and vacant housing units in San Juan County in 2023. A large portion of housing units are vacant. This is common in island and tourist areas, where many homes are used seasonally or as second homes. Therefore, a high vacancy rate does not mean that housing is easily available for year-round residents.
+
+### 5) Difference between two years
+
+```{r}
+year_a <- 2013
+year_b <- 2018
+
+tract_a <- get_acs(
+  geography = "tract",
+  variables = var_main,
+  state = county_state,
+  county = county_name,
+  geometry = TRUE,
+  year = year_a
+) %>%
+  select(GEOID, NAME, geometry, est_a = estimate, moe_a = moe)
+
+tract_b <- get_acs(
+  geography = "tract",
+  variables = var_main,
+  state = county_state,
+  county = county_name,
+  geometry = FALSE,
+  year = year_b
+) %>%
+  select(GEOID, est_b = estimate, moe_b = moe)
+
+tract_diff <- left_join(tract_a, tract_b, by = "GEOID") %>%
+  mutate(diff = est_b - est_a)
+
+ggplot(tract_diff) +
+  geom_sf(aes(fill = diff), color = "white", linewidth = 0.25) +
+  labs(
+    title = "Difference Map by Census Tract",
+    subtitle = paste(nice_label[var_main], ":", year_b, "−", year_a),
+    fill = "Diff"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+This map shows how median home values changed across census tracts between 2013 and 2018. Positive values indicate tracts where home values increased, while negative values indicate little change or decreases. The map shows that changes are not uniform across the county, highlighting spatial differences in how housing markets evolved over time.
+
+### 6) Age distribution over gender
+
+```{r}
+age_vars <- c(
+  male_0_9   = "B01001_003",
+  male_10_19 = "B01001_004",
+  male_20_29 = "B01001_005",
+  male_30_39 = "B01001_006",
+  male_40_49 = "B01001_007",
+  male_50_59 = "B01001_008",
+  male_60_69 = "B01001_009",
+  male_70p   = "B01001_010",
+  female_0_9   = "B01001_027",
+  female_10_19 = "B01001_028",
+  female_20_29 = "B01001_029",
+  female_30_39 = "B01001_030",
+  female_40_49 = "B01001_031",
+  female_50_59 = "B01001_032",
+  female_60_69 = "B01001_033",
+  female_70p   = "B01001_034"
+)
+age_dat <- get_acs(
+  geography = "county",
+  variables = age_vars,
+  state = county_state,
+  county = county_name,
+  year = year_max
+) %>%
+  mutate(
+    sex = ifelse(grepl("^male_", variable), "Male", "Female"),
+    age_group = gsub("^male_|^female_", "", variable),
+    value = ifelse(sex == "Male", -estimate, estimate)
+  )
+
+ggplot(age_dat, aes(x = age_group, y = value, fill = sex)) +
+  geom_col() +
+  coord_flip() +
+  scale_y_continuous(labels = abs) +
+  labs(
+    title = "Age Structure (County Level)",
+    subtitle = paste("San Juan County —", year_max, "ACS 5-year"),
+    x = "Age group",
+    y = "Population",
+    fill = "Sex"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+This age pyramid displays the population distribution by age group and sex in San Juan County in 2023. The figure shows a larger share of residents in older age groups compared to younger groups. This pattern suggests an aging population, which is consistent with the county’s appeal to retirees.
+
+## Spatial and Interactive Analysis
+
+### Spatial Patterns Across Census Tracts
+
+Building on the exploratory analysis, census tract–level maps reveal substantial spatial variation in housing values across San Juan County. Differences across tracts reflect geography, accessibility, and housing demand, rather than fine-scale neighborhood effects.
+
+### Changes in Housing Values Over Time
+
+Difference maps comparing selected years highlight that increases in median home value are not uniform across the county. Some tracts experienced larger increases, while others changed more gradually. These results should be interpreted cautiously due to sampling variability in ACS estimates.
+
+## Discussion
+
+The results show several important patterns in San Juan County. Home values have increased quickly in recent years, while many housing units remain vacant. This suggests that even though there are many homes, it may still be hard for people who live and work in the county to find affordable housing.
+
+The maps show that changes in home values are different across parts of the county. Some areas experienced larger increases than others. These differences are likely related to location, island access, and housing demand, rather than small neighborhood differences.
+
+The age structure shows that a large share of the population is older. This supports the idea that San Juan County attracts retirees and seasonal residents. An older population can affect local jobs, housing needs, and public services.
+
+These results should be interpreted carefully. The data come from survey estimates, and the county has a small population. Because of this, small changes across years or areas may not represent real differences. The interactive Shiny app helps by allowing users to explore patterns across multiple years and variables instead of relying on a single number.
+
+## Conclusion
+
+This project explored population, income, and housing patterns in San Juan County using Census data and an interactive Shiny application. The results highlight rising home values, a large share of vacant housing, and an aging population. Together, these patterns reflect the unique challenges faced by an island county. Combining maps, charts, and interactive tools helps better understand these trends and supports clearer interpretation of the data.
+
+## References
+
+U.S. Census Bureau. American Community Survey (ACS) 5-year estimates.\
+Walker, K. (2024). *tidycensus*: An R package for U.S. Census data.
+
+## Interactive Exploration Using Shiny
+
+To complement the static figures, an interactive Shiny application was developed to allow users to explore spatial and temporal patterns dynamically. Users can select different variables and years, compare changes across time, and view associated margins of error. This interactive approach supports sensitivity analysis and improves interpretability for small-area data.
+
+### Publishing error (Posit Connect)
+
+Attempted to publish the Shiny app to BU Posit Connect.
+
+Error encountered during deployment: - Package `terra` failed to install because GDAL is missing on the server. - Message: `configure: error: gdal-config not found or not executable` - Result: `r-missing-system-library`
+
+The Shiny app runs successfully in RStudio locally.
+
+Git link for the shiny app:
